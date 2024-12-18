@@ -846,6 +846,24 @@ namespace MudBlazor
         public RenderFragment NoRecordsContent { get; set; }
 
         /// <summary>
+        /// Hides the toolbar if there are no rows to display.
+        /// </summary>
+        [Parameter]
+        public bool HideToolbarOnEmpty { get; set; } = false;
+
+        /// <summary>
+        /// Hides the header row if there are no rows to display.
+        /// </summary>
+        [Parameter]
+        public bool HideHeaderOnEmpty { get; set; } = false;
+
+        /// <summary>
+        /// Hides the pager if there are no rows to display.
+        /// </summary>
+        [Parameter]
+        public bool HidePagerOnEmpty { get; set; } = false;
+
+        /// <summary>
         /// The content shown while <see cref="Loading"/> is <c>true</c>.
         /// </summary>
         [Parameter]
@@ -1228,6 +1246,38 @@ namespace MudBlazor
         /// </summary>
         internal bool HasServerData => ServerData != null || VirtualizeServerData != null;
 
+        /// <summary>
+        /// This property is determined by checking if the <see cref="Items"/> or <see cref="ServerItems"/> are empty.
+        /// </summary>
+        private bool IsEmpty
+        {
+            get
+            {
+                return !((Items != null && Items.Any()) || (HasServerData && ServerItems.Any()));
+            }
+        }
+
+        private bool HideToolbar
+        {
+            get
+            {
+                return (HideToolbarOnEmpty == true && IsEmpty);
+            }
+        }
+        private bool HideHeader
+        {
+            get
+            {
+                return (HideHeaderOnEmpty == true && IsEmpty);
+            }
+        }
+        private bool HidePager
+        {
+            get
+            {
+                return (HidePagerOnEmpty == true && IsEmpty);
+            }
+        }
         #endregion
 
         protected override void OnInitialized()

@@ -4938,5 +4938,68 @@ namespace MudBlazor.UnitTests.Components
             form.IsTouched.Should().BeTrue();
             form.IsValid.Should().BeFalse();
         }
+
+        [Test]
+        public void DataGridHidePartsOnItemsEmptyTest()
+        {
+            var comp = Context.RenderComponent<DataGridHidePartsOnEmptyTest>();
+            var compParameters = new List<ComponentParameter>
+            {
+                ComponentParameter.CreateParameter(nameof(comp.Instance.HideToolBarOnEmpty), true),
+                ComponentParameter.CreateParameter(nameof(comp.Instance.HideHeaderOnEmpty), true),
+                ComponentParameter.CreateParameter(nameof(comp.Instance.HidePagerOnEmpty), true)
+            };
+            comp.SetParametersAndRender(compParameters.ToArray());
+            var dataGrid = comp.FindComponent<MudDataGrid<DataGridHidePartsOnEmptyTest.State>>();
+
+            // Toolbar, header, and pager should be visible
+            dataGrid.FindAll(".mud-table-head").Count.Should().Be(1);
+            dataGrid.FindComponents<MudToolBar>().Count.Should().Be(2);
+            comp.FindComponents<MudDataGridPager<DataGridHidePartsOnEmptyTest.State>>().Count.Should().Be(1);
+
+            // Set items to empty list
+            var gridParameters = new List<ComponentParameter>
+            {
+                ComponentParameter.CreateParameter(nameof(dataGrid.Instance.Items), new List<DataGridHidePartsOnEmptyTest.State>())
+            };
+            dataGrid.SetParametersAndRender(gridParameters.ToArray());
+
+            // Toolbar, header, and pager should no longer be visible
+            dataGrid.FindAll(".mud-table-head").Count.Should().Be(0);
+            dataGrid.FindComponents<MudToolBar>().Count.Should().Be(0);
+            comp.FindComponents<MudDataGridPager<DataGridHidePartsOnEmptyTest.State>>().Count.Should().Be(0);
+        }
+
+        [Test]
+        public async Task DataGridHidePartsOnServerDataEmptyTest()
+        {
+            var comp = Context.RenderComponent<DataGridHidePartsOnEmptyTest>();
+            var compParameters = new List<ComponentParameter>
+            {
+                ComponentParameter.CreateParameter(nameof(comp.Instance.HideToolBarOnEmpty), true),
+                ComponentParameter.CreateParameter(nameof(comp.Instance.HideHeaderOnEmpty), true),
+                ComponentParameter.CreateParameter(nameof(comp.Instance.HidePagerOnEmpty), true),
+                ComponentParameter.CreateParameter(nameof(comp.Instance.UseServerData), true),
+            };
+            comp.SetParametersAndRender(compParameters.ToArray());
+            var dataGrid = comp.FindComponent<MudDataGrid<DataGridHidePartsOnEmptyTest.State>>();
+            await comp.InvokeAsync(async () => await dataGrid.Instance.ReloadServerData());
+
+            // Toolbar, header, and pager should be visible
+            dataGrid.FindAll(".mud-table-head").Count.Should().Be(1);
+            dataGrid.FindComponents<MudToolBar>().Count.Should().Be(2);
+            comp.FindComponents<MudDataGridPager<DataGridHidePartsOnEmptyTest.State>>().Count.Should().Be(1);
+
+            // Execute search with text that will return 0 server items
+            compParameters.Add(ComponentParameter.CreateParameter(nameof(comp.Instance.SearchText), "ZZ"));
+            comp.SetParametersAndRender(compParameters.ToArray());
+            dataGrid = comp.FindComponent<MudDataGrid<DataGridHidePartsOnEmptyTest.State>>();
+            await comp.InvokeAsync(async () => await dataGrid.Instance.ReloadServerData());
+
+            // Toolbar, header, and pager should no longer be visible
+            dataGrid.FindAll(".mud-table-head").Count.Should().Be(0);
+            dataGrid.FindComponents<MudToolBar>().Count.Should().Be(0);
+            comp.FindComponents<MudDataGridPager<DataGridHidePartsOnEmptyTest.State>>().Count.Should().Be(0);
+        }
     }
 }

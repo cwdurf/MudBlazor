@@ -1,0 +1,203 @@
+﻿<MudStack Row="true">
+    <MudSwitch T="bool" @bind-Value="HideToolBarOnEmpty" Label="Hide Toolbar" Color="Color.Primary" />
+    <MudSwitch T="bool" @bind-Value="HideHeaderOnEmpty" Label="Hide Header" Color="Color.Primary" />
+    <MudSwitch T="bool" @bind-Value="HidePagerOnEmpty" Label="Hide Pager" Color="Color.Primary" />
+    @if (!UseServerData)
+    {
+        <MudButton OnClick="ToggleItems" Variant="Variant.Filled">Toggle Items</MudButton>
+    }
+    <MudSwitch T="bool" @bind-Value="UseServerData" Label="Use Server Data" Color="Color.Primary" />
+    <MudSwitch T="bool" @bind-Value="Virtualize" Label="Virtualize" Color="Color.Primary" />
+</MudStack>
+
+@if (UseServerData)
+{
+    if (Virtualize)
+    {
+        <MudDataGrid @ref="_dataGrid" T="State"
+        VirtualizeServerData="VirtualizeServerReload"
+        Height="500px"
+        Filterable="true"
+        HideToolBarOnEmpty="HideToolBarOnEmpty"
+        HideHeaderOnEmpty="HideHeaderOnEmpty"
+        HidePagerOnEmpty="HidePagerOnEmpty">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">States</MudText>
+                <MudSpacer />
+                <MudTextField T="string" ValueChanged="@(s => Search(s))" Placeholder="Search by abbreviation" Adornment="Adornment.Start"
+                AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            </ToolBarContent>
+            <NoRecordsContent>
+                <h3>No records found</h3>
+            </NoRecordsContent>
+            <Columns>
+                <PropertyColumn Property="x => x.Abbreviation" />
+                <PropertyColumn Property="x => x.Name" />
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="State" />
+            </PagerContent>
+        </MudDataGrid>    
+    }
+
+    else
+    {
+        <MudDataGrid @ref="_dataGrid" T="State"
+        ServerData="ServerReload"    
+        Filterable="true"
+        HideToolBarOnEmpty="HideToolBarOnEmpty"
+        HideHeaderOnEmpty="HideHeaderOnEmpty"
+        HidePagerOnEmpty="HidePagerOnEmpty">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">States</MudText>
+                <MudSpacer />
+                <MudTextField T="string" ValueChanged="@(s => Search(s))" Placeholder="Search by abbreviation" Adornment="Adornment.Start"
+                AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            </ToolBarContent>
+            <NoRecordsContent>
+                <h3>No records found</h3>
+            </NoRecordsContent>
+            <Columns>
+                <PropertyColumn Property="x => x.Abbreviation" />
+                <PropertyColumn Property="x => x.Name" />
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="State" />
+            </PagerContent>
+        </MudDataGrid>            }
+}
+else
+{
+    <MudDataGrid @ref="_dataGrid" T="State"
+    Items="@_items"
+    Filterable="true"
+    HideToolBarOnEmpty="HideToolBarOnEmpty"
+    HideHeaderOnEmpty="HideHeaderOnEmpty"
+    HidePagerOnEmpty="HidePagerOnEmpty">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">States</MudText>
+            <MudSpacer />
+            <MudTextField T="string" Value="SearchText" ValueChanged="@(s => Search(s))" Placeholder="Search by abbreviation" Adornment="Adornment.Start"
+            AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+        </ToolBarContent>
+        <NoRecordsContent>
+            <h3>No records found</h3>
+        </NoRecordsContent>
+        <Columns>
+            <PropertyColumn Property="x => x.Abbreviation" />
+            <PropertyColumn Property="x => x.Name" />
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager T="State" />
+        </PagerContent>
+    </MudDataGrid>    
+}
+
+
+@code {
+    private List<State> _items = new List<State>();
+
+    private MudDataGrid<State> _dataGrid = new();
+    
+    [Parameter]
+    public string SearchText { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool HideToolBarOnEmpty { get; set; } = false;
+
+    [Parameter]
+    public bool HideHeaderOnEmpty { get; set; } = false;
+
+    [Parameter]
+    public bool HidePagerOnEmpty { get; set; } = false;
+
+    [Parameter]
+    public bool UseServerData { get; set; } = false;
+
+    [Parameter]
+    public bool Virtualize { get; set; } = false;
+
+    protected override void OnInitialized()
+    {
+        ToggleItems();
+    }
+
+    private void ToggleItems()
+    {
+        if (_items.Any())
+        {
+            _items.Clear();
+        }
+        else
+        {
+            _items = GetStates(); 
+        }
+        SearchText = string.Empty;
+    }
+
+    /// <summary>
+    /// Here we simulate getting the paged, filtered and ordered data from the server
+    /// </summary>
+    private async Task<GridData<State>> ServerReload(GridState<State> state)
+    {
+        await Task.Delay(1800);
+        IEnumerable<State> data = GetStates().Where(x => string.IsNullOrWhiteSpace(SearchText) || x.Abbreviation == SearchText);
+        var totalItems = data.Count();
+
+        return new GridData<State>
+        {
+            TotalItems = totalItems,
+            Items = data
+        };
+    }
+
+    /// <summary>
+    /// Here we simulate getting the paged, filtered and ordered data from the server
+    /// </summary>
+    private async Task<GridData<State>> VirtualizeServerReload(GridStateVirtualize<State> state, CancellationToken cancellationToken = default!)
+    {
+        await Task.Delay(1800);
+        IEnumerable<State> data = GetStates().Where(x => string.IsNullOrWhiteSpace(SearchText) || x.Abbreviation == SearchText);
+        var totalItems = data.Count();
+
+        return new GridData<State>
+        {
+            TotalItems = totalItems,
+            Items = data
+        };
+    }
+
+    private async Task Search(string searchText)
+    {
+        if (UseServerData)
+        {
+            SearchText = searchText;
+            await _dataGrid.ReloadServerData();
+        }
+        _items = _items.Where(x => x.Abbreviation == searchText).ToList();
+    }
+
+    private List<State> GetStates()
+    {
+        return new List<State>
+            {
+                new State("AL", "Alabama"),
+                new State("CO", "Colorado"),
+                new State("FL", "Florida"),
+                new State("NE", "Nebraska"),
+                new State("WY", "Wyoming"),
+            };
+    }
+
+    public class State
+    {
+        public string Abbreviation { get; set; }
+        public string Name { get; set; }
+
+        public State(string abbreviation, string name)
+        {
+            Abbreviation = abbreviation;
+            Name = name;
+        }
+    }
+}
